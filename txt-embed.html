@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Text Overlay</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: transparent;
+    width: 100%; height: 100%;
+  }
+  #wrap {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+  #txt {
+    line-height: 1.15;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>
+</head>
+<body>
+  <div id="wrap"><div id="txt"></div></div>
+  <script>
+    function qp(name, fallback) {
+      const v = new URLSearchParams(window.location.search).get(name);
+      return v === null || v === '' ? fallback : v;
+    }
+
+    const rawText = qp('text', 'Texto de ejemplo');
+    const fontFamily = qp('font', 'Poppins');
+    const fontSize = qp('size', '80');
+    const color = qp('color', '#ffffff');
+    const bold = qp('bold', '1') === '1';
+    const align = qp('align', 'center'); // left | center | right
+    const outline = qp('outline', '1') === '1';
+    const outlineColor = qp('outlineColor', '#000000');
+
+    // Cargar la fuente de Google Fonts dinámicamente
+    const fontParam = fontFamily.trim().replace(/\s+/g, '+');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${fontParam}:wght@400;700;900&display=swap`;
+    document.head.appendChild(link);
+
+    const txtEl = document.getElementById('txt');
+    const wrapEl = document.getElementById('wrap');
+
+    // "|" se usa como separador de líneas (los prompts de una sola línea no permiten Enter)
+    txtEl.textContent = rawText.split('|').join('\n');
+
+    txtEl.style.fontFamily = `'${fontFamily}', sans-serif`;
+    txtEl.style.fontSize = fontSize + 'px';
+    txtEl.style.color = color;
+    txtEl.style.fontWeight = bold ? '900' : '400';
+    txtEl.style.textAlign = align;
+    wrapEl.style.justifyContent = align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center';
+
+    if (outline) {
+      // Contorno simulado con múltiples text-shadow (soportado en cualquier navegador embebido)
+      const w = Math.max(1, Math.round(parseInt(fontSize, 10) / 40));
+      const shadows = [];
+      for (let dx = -w; dx <= w; dx++) {
+        for (let dy = -w; dy <= w; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          shadows.push(`${dx}px ${dy}px 0 ${outlineColor}`);
+        }
+      }
+      txtEl.style.textShadow = shadows.join(', ');
+    }
+  </script>
+</body>
+</html>
