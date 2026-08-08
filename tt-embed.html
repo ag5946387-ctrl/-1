@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TikTok Embed</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  video {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border: 0;
+  }
+  #msg {
+    color: #fff; font-family: sans-serif; padding: 20px; font-size: 16px;
+  }
+</style>
+</head>
+<body>
+  <div id="msg" style="display:none;"></div>
+  <video id="player" playsinline webkit-playsinline></video>
+  <script>
+    function qp(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function showMsg(text) {
+      var msg = document.getElementById('msg');
+      var vid = document.getElementById('player');
+      vid.style.display = 'none';
+      msg.style.display = 'block';
+      msg.textContent = text;
+    }
+
+    var tiktokUrl = qp('url');
+    var muted = qp('mute') === '1';
+    var loop = qp('loop') === '1';
+
+    if (!tiktokUrl) {
+      showMsg('Falta el parámetro ?url=LINK_DE_TIKTOK en la URL.');
+    } else {
+      var video = document.getElementById('player');
+      video.muted = muted;
+      video.loop = loop;
+      video.autoplay = true;
+
+      // Respaldo manual del loop, por si el atributo falla en algún navegador embebido
+      video.addEventListener('ended', function () {
+        if (loop) {
+          video.currentTime = 0;
+          video.play();
+        }
+      });
+
+      var apiUrl = 'https://www.tikwm.com/api/?url=' + encodeURIComponent(tiktokUrl) + '&hd=1';
+
+      fetch(apiUrl)
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+          if (!json || json.code !== 0 || !json.data) {
+            throw new Error('Respuesta inválida del resolver');
+          }
+          var src = json.data.hdplay || json.data.play;
+          if (!src) throw new Error('No se encontró URL de video');
+
+          // Las URLs de tikwm suelen ser relativas al dominio (empiezan con "/")
+          if (src.startsWith('/')) {
+            src = 'https://www.tikwm.com' + src;
+          }
+
+          video.src = src;
+          video.play().catch(function (err) {
+            // Autoplay con sonido bloqueado por el navegador: forzar mute y reintentar
+            video.muted = true;
+            video.play();
+          });
+        })
+        .catch(function (err) {
+          console.error(err);
+          showMsg('No se pudo cargar el video de TikTok. El resolver externo puede estar caído o el link no es válido.');
+        });
+    }
+  </script>
+</body>
+</html>
