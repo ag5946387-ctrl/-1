@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>YT Embed</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  #player, #player iframe { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; border: 0; }
+</style>
+</head>
+<body>
+  <div id="player"></div>
+  <script>
+    function qp(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    var videoId = qp('id');
+    var muted = qp('mute') === '1';
+    var loop = qp('loop') === '1';
+
+    if (!videoId) {
+      document.body.innerHTML = '<p style="color:#fff;font-family:sans-serif;padding:20px;">Falta el parámetro ?id=VIDEO_ID en la URL.</p>';
+    } else {
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      var player;
+      window.onYouTubeIframeAPIReady = function () {
+        var vars = {
+          autoplay: 1,
+          controls: 0,
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          fs: 0,
+          disablekb: 1,
+          playsinline: 1,
+          mute: muted ? 1 : 0
+        };
+        if (loop) {
+          vars.loop = 1;
+          vars.playlist = videoId;
+        }
+
+        player = new YT.Player('player', {
+          host: 'https://www.youtube-nocookie.com',
+          width: '100%',
+          height: '100%',
+          videoId: videoId,
+          playerVars: vars,
+          events: {
+            onReady: function (e) {
+              if (muted) e.target.mute();
+              e.target.playVideo();
+            },
+            onStateChange: function (e) {
+              // Respaldo manual del loop por si el parámetro loop/playlist falla
+              if (loop && e.data === YT.PlayerState.ENDED) {
+                e.target.playVideo();
+              }
+            }
+          }
+        });
+      };
+    }
+  </script>
+</body>
+</html>
